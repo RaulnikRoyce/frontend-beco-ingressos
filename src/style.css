@@ -1,0 +1,122 @@
+:root {
+  color-scheme: dark;
+  --beco-bg: #09090b;
+  --beco-fg: #fafafa;
+  --beco-muted: #a1a1aa;
+  --beco-card: rgba(12, 12, 14, 0.88);
+  --beco-row: #18181b;
+  --beco-line: rgba(255, 255, 255, 0.14);
+  --beco-red: #dc2626;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Outfit, system-ui, sans-serif;
+  background: var(--beco-bg);
+  color: var(--beco-fg);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+ul, ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+dl, dd {
+  margin: 0;
+}
+
+.card {
+  @apply rounded-2xl backdrop-blur-sm;
+  border: 1px solid var(--beco-line);
+  background: var(--beco-card);
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.field {
+  @apply w-full rounded-xl px-4 py-3 text-sm outline-none transition;
+  border: 1px solid var(--beco-line);
+  background: var(--beco-row);
+  color: var(--beco-fg);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+.form-grid > *,
+.form-grid .field {
+  min-width: 0;
+}
+
+.form-grid input[type="datetime-local"],
+.form-grid input[type="date"],
+.form-grid input[type="time"] {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .form-grid.form-grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.field::placeholder {
+  color: var(--beco-muted);
+}
+
+.field:focus {
+  border-color: rgba(220, 38, 38, 0.6);
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+}
+
+.btn-primary {
+  @apply inline-flex w-full items-center justify-center rounded-xl bg-red-600 px-5 py-3.5 text-sm font-bold text-white no-underline transition hover:bg-red-500 disabled:opacity-50 sm:w-auto;
+}
+
+.btn-ghost {
+  @apply inline-flex items-center justify-center rounded-xl border px-4 py-2 text-sm font-semibold no-underline transition;
+  border-color: var(--beco-line);
+  color: var(--beco-fg);
+}
+
+.btn-ghost:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.badge-esgotado {
+  @apply rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-red-400;
+}
+
+.badge-disponivel {
+  @apply rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-emerald-400;
+}
+
+.hero-evento {
+  @apply relative overflow-hidden rounded-2xl border p-6 sm:p-8;
+  border-color: var(--beco-line);
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.12), rgba(12, 12, 14, 0.95));
+}
+
+.total-box {
+  @apply mt-4 rounded-xl border px-4 py-3;
+  border-color: var(--beco-line);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.erro-box {
+  @apply rounded-xl border border-red-500/30 bg-red-950/40 px-4 py-3 text-sm text-red-200;
+}
