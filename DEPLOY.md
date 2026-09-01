@@ -1,15 +1,18 @@
 # Deploy da loja de ingressos
 
-Site público em `https://ingressosbeco.raulnikroyce.dev`.
+Site no ar em [https://ingressosbeco.raulnikroyce.dev](https://ingressosbeco.raulnikroyce.dev).
 
-## Netlify
+## Vercel
 
-1. Conecte o repositório `frontend-beco-ingressos` (ou monorepo apontando para esta pasta).
-2. Build command: `npm run build`
-3. Publish directory: `dist`
-4. Domínio customizado: `ingressosbeco.raulnikroyce.dev`
+1. Conecte o repositório `frontend-beco-ingressos` na branch `main`.
+2. Framework Vite (detectado automaticamente). Build `npm run build`, output `dist`.
+3. Em **Environment Variables**, cadastre `VITE_API_URL` = `https://api-beco-underground.onrender.com` (Production).
+4. Em **Domains**, adicione `ingressosbeco.raulnikroyce.dev`.
+5. No DNS de `raulnikroyce.dev`, crie CNAME `ingressosbeco` apontando para o valor que o Vercel indicar (em geral `cname.vercel-dns.com`).
 
-## Variáveis de ambiente
+O `vercel.json` na raiz faz rewrite SPA (`/recuperar`, `/:slug`, etc.).
+
+## Variáveis de ambiente (Vercel)
 
 | Variável | Valor |
 |---|---|

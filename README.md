@@ -7,7 +7,7 @@ Loja pública de ingressos para os shows do Beco. Checkout Mercado Pago, pedido,
 **Loja** [https://ingressosbeco.raulnikroyce.dev](https://ingressosbeco.raulnikroyce.dev) · **Painel** [https://demo.raulnikroyce.dev](https://demo.raulnikroyce.dev)  
 **API** [api-beco-underground](https://github.com/RaulnikRoyce/api-beco-underground) · **Painel (repo)** [frontend-beco-underground](https://github.com/RaulnikRoyce/frontend-beco-underground) · **Loja** este repositório
 
-Produção usa este Vue no Netlify e a API no Render. Meta, lotes e publicação ficam no painel admin.
+Produção no [Vercel](https://vercel.com) com domínio `ingressosbeco.raulnikroyce.dev`. A API roda no Render. Meta, lotes e publicação ficam no painel admin.
 
 ## Sobre este projeto
 
@@ -48,4 +48,8 @@ npm run build
 
 ## Produção
 
-No Netlify, `VITE_API_URL=https://api-beco-underground.onrender.com`. Detalhes em [DEPLOY.md](./DEPLOY.md).
+Deploy conectado ao GitHub no Vercel. Build `npm run build`, output `dist`. Domínio `ingressosbeco.raulnikroyce.dev` via CNAME no DNS de `raulnikroyce.dev`.
+
+Variável `VITE_API_URL=https://api-beco-underground.onrender.com` no painel do Vercel. O `vercel.json` garante rewrite SPA para o Vue Router.
+
+Detalhes de DNS, API e widget em [DEPLOY.md](./DEPLOY.md).
