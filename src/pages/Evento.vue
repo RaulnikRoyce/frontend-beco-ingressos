@@ -8,11 +8,12 @@
       <p class="mt-2 text-zinc-400">{{ evento.local }}</p>
     </header>
 
-    <div v-if="loteAtivo" class="card">
-      <div class="flex flex-wrap items-start justify-between gap-4">
+    <div v-if="loteAtivo" class="card checkout-card">
+      <p class="text-xs font-bold uppercase tracking-wider text-zinc-500">Lote atual</p>
+      <div class="mt-2 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p class="text-sm text-zinc-400">{{ loteAtivo.nome }}</p>
-          <p class="mt-1 text-3xl font-bold font-mono">R$ {{ formatarMoeda(loteAtivo.preco) }}</p>
+          <p class="text-sm font-semibold text-zinc-300">{{ loteAtivo.nome }}</p>
+          <p class="checkout-preco mt-2">R$ {{ formatarMoeda(loteAtivo.preco) }}</p>
           <p class="mt-3">
             <span :class="loteAtivo.restam > 0 ? 'badge-disponivel' : 'badge-esgotado'">
               {{ loteAtivo.restam > 0 ? `Restam ${loteAtivo.restam}` : 'Esgotado' }}
@@ -21,7 +22,7 @@
         </div>
       </div>
 
-      <form v-if="loteAtivo.restam > 0" class="form-grid mt-6" @submit.prevent="comprar">
+      <form v-if="loteAtivo.restam > 0" class="form-grid mt-8 border-t border-zinc-800 pt-8" @submit.prevent="comprar">
         <label class="grid gap-1 text-sm">
           <span class="text-zinc-400">Quantidade (máx. 4)</span>
           <input v-model.number="form.quantidade" type="number" min="1" :max="Math.min(4, loteAtivo.restam)" class="field" required @input="atualizarTotal" />
@@ -76,11 +77,11 @@ import { obterEvento, criarPedido, inscreverListaEspera } from '../services/loja
 import { formatarData, formatarMoeda, atualizarOg, schemaEvento } from '../lib/formatar';
 import { LOJA_URL } from '../config';
 
-function mensagemAmigavel(erroBruto) {
+function mensagemAmigavel(erroBruto, status) {
   if (!erroBruto) return 'Não foi possível iniciar a compra. Tente de novo em instantes.';
   const texto = String(erroBruto);
-  if (/MP_ACCESS_TOKEN|mercadopago|access_token/i.test(texto)) {
-    return 'Pagamento temporariamente indisponível. Entre em contato com a produção do evento.';
+  if (status === 503 || /indisponível|MP_ACCESS|mercadopago|access_token/i.test(texto)) {
+    return 'Pagamento temporariamente indisponível. Fale com a produção do evento.';
   }
   if (/esgotado|estoque/i.test(texto)) return 'Ingressos esgotados para este lote.';
   if (/cupom/i.test(texto)) return texto;
@@ -143,7 +144,7 @@ export default {
         });
         schemaEvento(evento.value, loteAtivo.value);
       } catch (e) {
-        erro.value = mensagemAmigavel(e.response?.data?.erro) || 'Evento indisponível.';
+        erro.value = mensagemAmigavel(e.response?.data?.erro, e.response?.status) || 'Evento indisponível.';
       } finally {
         carregando.value = false;
       }
@@ -168,7 +169,7 @@ export default {
         if (res.init_point) window.location.href = res.init_point;
         else router.push(`/pedido/${res.codigo}`);
       } catch (e) {
-        erro.value = mensagemAmigavel(e.response?.data?.erro);
+        erro.value = mensagemAmigavel(e.response?.data?.erro, e.response?.status);
       } finally {
         enviando.value = false;
       }

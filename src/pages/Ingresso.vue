@@ -1,5 +1,5 @@
 <template>
-  <div v-if="ingresso" class="card text-center">
+  <div v-if="ingresso" class="card checkout-card text-center">
     <p class="text-xs font-bold uppercase tracking-wider text-red-400">Ingresso válido</p>
     <h1 class="mt-2 text-2xl font-bold">{{ ingresso.evento_nome }}</h1>
     <p class="mt-1 text-sm text-zinc-400">{{ formatarData(ingresso.evento_data) }} · {{ ingresso.evento_local }}</p>
@@ -8,7 +8,7 @@
     <img
       :src="qrUrl"
       alt="QR Code do ingresso"
-      class="mx-auto mt-8 rounded-xl bg-white p-3"
+      class="ingresso-qr mx-auto"
       width="200"
       height="200"
     />

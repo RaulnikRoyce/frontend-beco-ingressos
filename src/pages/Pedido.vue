@@ -1,5 +1,5 @@
 <template>
-  <div v-if="dados" class="card text-center">
+  <div v-if="dados" class="card checkout-card text-center">
     <h1 class="text-2xl font-bold">{{ dados.evento.nome }}</h1>
     <p class="mt-2 text-sm text-zinc-400">Pedido {{ dados.pedido.codigo_publico }}</p>
 

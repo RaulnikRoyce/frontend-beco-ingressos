@@ -1,7 +1,10 @@
 <template>
-  <div class="card max-w-md mx-auto">
-    <h1 class="text-2xl font-bold">Recuperar ingresso</h1>
-    <p class="mt-2 text-sm text-zinc-400">Use o e-mail da compra e o código do pedido.</p>
+  <div class="card checkout-card max-w-md mx-auto">
+    <header class="page-lead page-lead-compact">
+      <p class="page-kicker">Conta</p>
+      <h1 class="page-title page-title-sm">Recuperar ingresso</h1>
+      <p class="page-sub">Use o e-mail da compra e o código do pedido.</p>
+    </header>
 
     <form class="form-grid mt-6" @submit.prevent="enviar">
       <input v-model="email" type="email" class="field" placeholder="E-mail" required />
