@@ -1,18 +1,34 @@
 # Ingressos Beco Underground
 
-Loja pública de ingressos. Vue 3 + Vite + UnoCSS.
+<img src="public/logo-beco.png" alt="Logo Beco Underground Produções" width="160">
 
-- Produção: https://ingressosbeco.raulnikroyce.dev
-- Painel admin: https://demo.raulnikroyce.dev
+Loja pública de ingressos para os shows do Beco. Checkout Mercado Pago, pedido, QR e recuperação por e-mail.
 
-## Local
+**Loja** [https://ingressosbeco.raulnikroyce.dev](https://ingressosbeco.raulnikroyce.dev) · **Painel** [https://demo.raulnikroyce.dev](https://demo.raulnikroyce.dev)  
+**API** [api-beco-underground](https://github.com/RaulnikRoyce/api-beco-underground) · **Painel (repo)** [frontend-beco-underground](https://github.com/RaulnikRoyce/frontend-beco-underground) · **Loja** este repositório
+
+Produção usa este Vue no Netlify e a API no Render. Meta, lotes e publicação ficam no painel admin.
+
+## Sobre este projeto
+
+Front da venda de ingressos do ecossistema Beco Underground. Consome rotas públicas da API (`/publico/eventos`, `/ingressos/pedidos`) e depende do painel para configurar cada evento antes de abrir a loja.
+
+## Stack
+
+Vue 3 · Vite · UnoCSS · Vue Router · Axios
+
+## Subir local
+
+Com a API em `http://localhost:3000`, rode os comandos abaixo.
 
 ```bash
 npm install
 npm run dev
 ```
 
-API em `http://localhost:3000` (proxy Vite). Configure `MP_ACCESS_TOKEN` na API para checkout real.
+Abra o endereço que o Vite mostrar (`5173` ou `5174`). Em desenvolvimento as chamadas `/publico` e `/ingressos` vão para a API via proxy.
+
+Configure `MP_ACCESS_TOKEN` no `.env` da API para checkout real. Sem o token, a loja lista eventos e para no pagamento.
 
 ## Rotas
 
@@ -23,4 +39,13 @@ API em `http://localhost:3000` (proxy Vite). Configure `MP_ACCESS_TOKEN` na API 
 - `/ingresso/:codigo` QR do ingresso pago
 - `/recuperar` buscar ingresso por e-mail + código
 
-Deploy: veja [DEPLOY.md](./DEPLOY.md).
+## Qualidade
+
+```bash
+npm run lint
+npm run build
+```
+
+## Produção
+
+No Netlify, `VITE_API_URL=https://api-beco-underground.onrender.com`. Detalhes em [DEPLOY.md](./DEPLOY.md).
