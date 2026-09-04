@@ -5,9 +5,9 @@ export async function listarEventos() {
   return data;
 }
 
-export async function obterEvento(slugOuId, preview = false) {
+export async function obterEvento(slugOuId, previewToken) {
   const { data } = await api.get(`/publico/eventos/${slugOuId}`, {
-    params: preview ? { preview: '1' } : undefined
+    params: previewToken ? { preview_token: previewToken } : undefined
   });
   return data;
 }

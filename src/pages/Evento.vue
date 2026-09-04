@@ -97,7 +97,8 @@ export default {
     const erro = ref('');
     const enviando = ref(false);
     const emailEspera = ref('');
-    const preview = computed(() => route.query.preview === '1');
+    const previewToken = computed(() => String(route.query.preview_token || ''));
+    const preview = computed(() => Boolean(previewToken.value));
 
     const form = reactive({
       quantidade: 1,
@@ -133,7 +134,7 @@ export default {
 
     onMounted(async () => {
       try {
-        evento.value = await obterEvento(slugOuId.value, preview.value);
+        evento.value = await obterEvento(slugOuId.value, previewToken.value);
         if (evento.value.slug && /^\d+$/.test(String(slugOuId.value))) {
           router.replace({ path: `/${evento.value.slug}`, query: route.query });
         }
