@@ -10,7 +10,14 @@
       const link = proximo.slug ? `${LOJA}/${proximo.slug}` : `${LOJA}/e/${proximo.id}`;
       const alvo = document.getElementById('beco-proximo-show');
       if (!alvo) return;
-      alvo.innerHTML = `<a href="${link}" style="color:#dc2626;font-weight:700">${proximo.nome}</a> · ${proximo.local}`;
+      const a = document.createElement('a');
+      a.setAttribute('href', link);
+      a.style.color = '#dc2626';
+      a.style.fontWeight = '700';
+      a.textContent = proximo.nome;
+      alvo.textContent = '';
+      alvo.appendChild(a);
+      alvo.appendChild(document.createTextNode(' · ' + proximo.local));
     })
     .catch(() => {});
 })();
