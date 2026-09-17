@@ -34,14 +34,6 @@ Variáveis de pagamento na API:
 | `LOJA_INGRESSOS_URL` | `https://ingressosbeco.raulnikroyce.dev` |
 | `API_PUBLIC_URL` | URL pública da API (webhook MP) |
 
-## Cron (reservas expiradas)
-
-Agende no Render ou cron externo a cada 5 minutos:
-
-```bash
-npm run job:expirar-reservas
-```
-
 ## Widget portfólio
 
 Inclua no site pessoal:
@@ -49,4 +41,16 @@ Inclua no site pessoal:
 ```html
 <div id="beco-proximo-show"></div>
 <script src="https://ingressosbeco.raulnikroyce.dev/widget.js"></script>
+```
+
+**Importante:** o widget faz `fetch` na API a partir do domínio onde ele está embedado — esse domínio (o "site pessoal", não a loja nem o painel) também precisa estar em `CORS_ORIGIN` na API, senão o navegador bloqueia a chamada e o widget não aparece (silenciosamente, exceto por um aviso no console).
+
+Se a API ou a loja rodarem em outro domínio (staging, por exemplo), sobrescreva sem editar o arquivo:
+
+```html
+<script
+  src="https://ingressosbeco.raulnikroyce.dev/widget.js"
+  data-api="https://outra-api.exemplo.com"
+  data-loja="https://outra-loja.exemplo.com"
+></script>
 ```

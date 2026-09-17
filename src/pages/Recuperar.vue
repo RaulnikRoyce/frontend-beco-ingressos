@@ -8,7 +8,15 @@
 
     <form class="form-grid mt-6" @submit.prevent="enviar">
       <input v-model="email" type="email" class="field" placeholder="E-mail" required />
-      <input v-model="codigo" class="field" placeholder="Código do pedido" required />
+      <input
+        v-model="codigo"
+        class="field"
+        placeholder="Código do pedido (16 caracteres, ex.: a1b2c3d4e5f60789)"
+        pattern="[a-fA-F0-9]{16}"
+        maxlength="16"
+        title="16 caracteres (letras a-f e números), como no e-mail ou na tela do pedido"
+        required
+      />
       <p v-if="erro" class="text-sm text-red-400">{{ erro }}</p>
       <button type="submit" class="btn-primary" :disabled="enviando">Buscar</button>
     </form>
@@ -26,6 +34,7 @@
 <script>
 import { ref } from 'vue';
 import { recuperarIngresso } from '../services/loja';
+import { mensagemDeErro } from '../lib/erros';
 
 export default {
   setup() {
@@ -44,7 +53,7 @@ export default {
         ingressos.value = res.ingressos || [];
         if (!ingressos.value.length) erro.value = 'Nenhum ingresso neste pedido.';
       } catch (e) {
-        erro.value = e.response?.data?.erro || 'Não encontramos este pedido.';
+        erro.value = mensagemDeErro(e, 'Não encontramos este pedido.');
       } finally {
         enviando.value = false;
       }

@@ -3,11 +3,14 @@
     <h1 class="text-2xl font-bold">{{ dados.evento.nome }}</h1>
     <p class="mt-2 text-sm text-zinc-400">Pedido {{ dados.pedido.codigo_publico }}</p>
 
-    <p v-if="dados.pedido.status === 'pendente'" class="mt-6 text-amber-300">
-      Aguardando pagamento. Se você já pagou, atualize esta página em instantes.
-    </p>
-    <p v-else-if="dados.pedido.status === 'pago'" class="mt-6 text-emerald-400 font-semibold">
+    <p v-if="dados.pedido.status === 'pago'" class="mt-6 text-emerald-400 font-semibold">
       Pagamento confirmado
+    </p>
+    <p v-else-if="dados.pedido.status === 'pendente' && pagamentoRecusado" class="mt-6 text-red-400">
+      Pagamento recusado. Verifique os dados do cartão ou tente outro meio de pagamento.
+    </p>
+    <p v-else-if="dados.pedido.status === 'pendente'" class="mt-6 text-amber-300">
+      Aguardando pagamento. Se você já pagou, atualize esta página em instantes.
     </p>
     <p v-else-if="dados.pedido.status === 'expirado'" class="mt-6 text-red-400">
       Reserva expirada. Volte ao evento e tente de novo.
@@ -15,6 +18,14 @@
     <p v-else class="mt-6 text-zinc-400">Status: {{ dados.pedido.status }}</p>
 
     <p class="mt-4 font-mono text-lg">R$ {{ formatarMoeda(dados.pedido.total) }}</p>
+
+    <a
+      v-if="dados.pedido.status === 'pendente' && dados.pedido.mp_init_point"
+      :href="dados.pedido.mp_init_point"
+      class="btn-primary mt-6 inline-flex"
+    >
+      {{ pagamentoRecusado ? 'Tentar pagar de novo' : 'Continuar pagamento' }}
+    </a>
 
     <ul v-if="dados.ingressos?.length" class="mt-8 space-y-3 text-left">
       <li v-for="ing in dados.ingressos" :key="ing.codigo">
@@ -37,7 +48,7 @@
 </template>
 
 <script>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { obterPedido } from '../services/loja';
 import { formatarMoeda } from '../lib/formatar';
@@ -49,6 +60,10 @@ export default {
     const carregando = ref(true);
     const erro = ref('');
 
+    const pagamentoRecusado = computed(() =>
+      route.query.status === 'falha' || Boolean(dados.value?.pedido?.pagamento_recusado_em)
+    );
+
     onMounted(async () => {
       try {
         dados.value = await obterPedido(route.params.codigo);
@@ -59,7 +74,7 @@ export default {
       }
     });
 
-    return { dados, carregando, erro, formatarMoeda };
+    return { dados, carregando, erro, pagamentoRecusado, formatarMoeda };
   }
 };
 </script>

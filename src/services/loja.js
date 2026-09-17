@@ -17,6 +17,11 @@ export async function criarPedido(payload) {
   return data;
 }
 
+export async function previsualizarPedido(payload) {
+  const { data } = await api.post('/ingressos/pedidos/preview', payload);
+  return data;
+}
+
 export async function obterPedido(codigo) {
   const { data } = await api.get(`/ingressos/pedidos/${codigo}`);
   return data;

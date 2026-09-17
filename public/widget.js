@@ -1,6 +1,7 @@
 (function () {
-  const API = 'https://api-beco-underground.onrender.com';
-  const LOJA = 'https://ingressosbeco.raulnikroyce.dev';
+  const script = document.currentScript;
+  const API = (script && script.getAttribute('data-api')) || 'https://api-beco-underground.onrender.com';
+  const LOJA = (script && script.getAttribute('data-loja')) || 'https://ingressosbeco.raulnikroyce.dev';
 
   fetch(`${API}/publico/eventos`)
     .then((r) => r.json())
@@ -19,5 +20,7 @@
       alvo.appendChild(a);
       alvo.appendChild(document.createTextNode(' · ' + proximo.local));
     })
-    .catch(() => {});
+    .catch((erro) => {
+      console.warn('[beco-widget] não foi possível carregar o próximo show:', erro);
+    });
 })();

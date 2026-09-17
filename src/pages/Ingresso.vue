@@ -6,7 +6,8 @@
     <p class="mt-2 text-sm">{{ ingresso.lote_nome }} · {{ ingresso.comprador_nome }}</p>
 
     <img
-      :src="qrUrl"
+      v-if="qrDataUrl"
+      :src="qrDataUrl"
       alt="QR Code do ingresso"
       class="ingresso-qr mx-auto"
       width="200"
@@ -20,8 +21,9 @@
 </template>
 
 <script>
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import QRCode from 'qrcode';
 import { obterIngresso } from '../services/loja';
 import { formatarData, atualizarOg } from '../lib/formatar';
 import { LOJA_URL } from '../config';
@@ -32,12 +34,15 @@ export default {
     const ingresso = ref(null);
     const carregando = ref(true);
     const erro = ref('');
+    const qrDataUrl = ref('');
 
-    const qrUrl = computed(() => {
-      if (!ingresso.value) return '';
-      const url = `${LOJA_URL}/ingresso/${ingresso.value.codigo}`;
-      return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
-    });
+    async function gerarQr(url) {
+      try {
+        qrDataUrl.value = await QRCode.toDataURL(url, { width: 200, margin: 1 });
+      } catch {
+        qrDataUrl.value = '';
+      }
+    }
 
     onMounted(async () => {
       try {
@@ -46,14 +51,17 @@ export default {
           title: `Ingresso · ${ingresso.value.evento_nome}`,
           description: ingresso.value.lote_nome
         });
-      } catch {
-        erro.value = 'Ingresso não encontrado.';
+        await gerarQr(`${LOJA_URL}/ingresso/${ingresso.value.codigo}`);
+      } catch (e) {
+        erro.value = e.response?.status === 400
+          ? 'Pagamento ainda não confirmado. Atualize esta página em alguns instantes.'
+          : 'Ingresso não encontrado.';
       } finally {
         carregando.value = false;
       }
     });
 
-    return { ingresso, carregando, erro, qrUrl, formatarData };
+    return { ingresso, carregando, erro, qrDataUrl, formatarData };
   }
 };
 </script>

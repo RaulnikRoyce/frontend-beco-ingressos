@@ -15,22 +15,34 @@
           <p class="text-sm font-semibold text-zinc-300">{{ loteAtivo.nome }}</p>
           <p class="checkout-preco mt-2">R$ {{ formatarMoeda(loteAtivo.preco) }}</p>
           <p class="mt-3">
-            <span :class="loteAtivo.restam > 0 ? 'badge-disponivel' : 'badge-esgotado'">
-              {{ loteAtivo.restam > 0 ? `Restam ${loteAtivo.restam}` : 'Esgotado' }}
-            </span>
+            <span class="badge-disponivel">Restam {{ loteAtivo.restam }}</span>
           </p>
         </div>
       </div>
 
-      <form v-if="loteAtivo.restam > 0" class="form-grid mt-8 border-t border-zinc-800 pt-8" @submit.prevent="comprar">
+      <form class="form-grid mt-8 border-t border-zinc-800 pt-8" @submit.prevent="comprar">
         <label class="grid gap-1 text-sm">
           <span class="text-zinc-400">Quantidade (máx. 4)</span>
           <input v-model.number="form.quantidade" type="number" min="1" :max="Math.min(4, loteAtivo.restam)" class="field" required @input="atualizarTotal" />
         </label>
 
-        <div class="total-box flex items-center justify-between text-sm">
-          <span class="text-zinc-400">Total estimado</span>
-          <span class="text-xl font-bold font-mono">R$ {{ formatarMoeda(totalEstimado) }}</span>
+        <div class="total-box grid gap-1 text-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-zinc-400">Subtotal</span>
+            <span class="font-mono">R$ {{ formatarMoeda(precificacao.subtotal) }}</span>
+          </div>
+          <div v-if="precificacao.desconto > 0" class="flex items-center justify-between text-emerald-400">
+            <span>Desconto do cupom</span>
+            <span class="font-mono">- R$ {{ formatarMoeda(precificacao.desconto) }}</span>
+          </div>
+          <div v-if="precificacao.repassa && precificacao.taxa > 0" class="flex items-center justify-between text-zinc-400">
+            <span>Taxa de serviço</span>
+            <span class="font-mono">+ R$ {{ formatarMoeda(precificacao.taxa) }}</span>
+          </div>
+          <div class="flex items-center justify-between border-t border-zinc-800 pt-2">
+            <span class="font-semibold text-zinc-300">Total{{ precificacao.carregando ? ' (atualizando…)' : '' }}</span>
+            <span class="text-xl font-bold font-mono">R$ {{ formatarMoeda(precificacao.total) }}</span>
+          </div>
         </div>
 
         <label class="grid gap-1 text-sm">
@@ -44,6 +56,7 @@
         <label class="grid gap-1 text-sm">
           <span class="text-zinc-400">Cupom (opcional)</span>
           <input v-model="form.cupom" class="field" autocomplete="off" />
+          <span v-if="erroCupom" class="text-xs text-amber-300">{{ erroCupom }}</span>
         </label>
         <label class="flex items-start gap-2 text-sm text-zinc-400">
           <input v-model="form.lgpd" type="checkbox" class="mt-1" />
@@ -51,11 +64,19 @@
         </label>
         <p v-if="erro" class="erro-box" role="alert">{{ erro }}</p>
         <button type="submit" class="btn-primary" :disabled="enviando || !form.lgpd">
-          {{ enviando ? 'Redirecionando…' : `Pagar R$ ${formatarMoeda(totalEstimado)}` }}
+          {{ enviando ? 'Redirecionando…' : `Pagar R$ ${formatarMoeda(precificacao.total)}` }}
         </button>
       </form>
+    </div>
 
-      <div v-else class="mt-6">
+    <div v-else-if="loteEsgotado" class="card checkout-card">
+      <p class="text-xs font-bold uppercase tracking-wider text-zinc-500">Lote atual</p>
+      <div class="mt-2">
+        <p class="text-sm font-semibold text-zinc-300">{{ loteEsgotado.nome }}</p>
+        <p class="checkout-preco mt-2">R$ {{ formatarMoeda(loteEsgotado.preco) }}</p>
+        <p class="mt-3"><span class="badge-esgotado">Esgotado</span></p>
+      </div>
+      <div class="mt-6">
         <p class="text-sm text-zinc-400">Esgotado neste lote. Deixe seu e-mail para aviso.</p>
         <form class="form-grid form-grid-2 mt-4" @submit.prevent="listaEspera">
           <input v-model="emailEspera" type="email" class="field" placeholder="Seu e-mail" required />
@@ -64,7 +85,7 @@
       </div>
     </div>
 
-    <p v-else class="card text-sm text-zinc-500">Em breve. Nenhum lote ativo.</p>
+    <p v-else class="card text-sm text-zinc-500">Em breve. Nenhum lote à venda no momento.</p>
   </div>
   <p v-else-if="carregando" class="text-sm text-zinc-500">Carregando evento…</p>
   <p v-else class="erro-box">{{ erro || 'Evento não encontrado.' }}</p>
@@ -73,13 +94,15 @@
 <script>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { obterEvento, criarPedido, inscreverListaEspera } from '../services/loja';
+import { obterEvento, criarPedido, previsualizarPedido, inscreverListaEspera } from '../services/loja';
 import { formatarData, formatarMoeda, atualizarOg, schemaEvento } from '../lib/formatar';
+import { mensagemDeErro } from '../lib/erros';
 import { LOJA_URL } from '../config';
 
-function mensagemAmigavel(erroBruto, status) {
-  if (!erroBruto) return 'Não foi possível iniciar a compra. Tente de novo em instantes.';
-  const texto = String(erroBruto);
+function mensagemAmigavel(e) {
+  const status = e?.response?.status;
+  const texto = mensagemDeErro(e, '');
+  if (!texto) return 'Não foi possível iniciar a compra. Tente de novo em instantes.';
   if (status === 503 || /indisponível|MP_ACCESS|mercadopago|access_token/i.test(texto)) {
     return 'Pagamento temporariamente indisponível. Fale com a produção do evento.';
   }
@@ -113,16 +136,67 @@ export default {
     const loteAtivo = computed(() => {
       if (evento.value?.lote_vigente) return evento.value.lote_vigente;
       const lotes = evento.value?.lotes || [];
-      const vigente = lotes.find((l) => l.vigente || l.status_venda === 'vigente');
-      if (vigente) return vigente;
-      return lotes.sort((a, b) => a.ordem - b.ordem || a.id - b.id)[0] || null;
+      return lotes.find((l) => l.vigente || l.status_venda === 'vigente') || null;
     });
 
-    const totalEstimado = computed(() => {
-      const preco = Number(loteAtivo.value?.preco) || 0;
-      const qtd = Number(form.quantidade) || 1;
-      return Math.round(preco * qtd * 100) / 100;
+    const loteEsgotado = computed(() => {
+      if (loteAtivo.value) return null;
+      const lotes = evento.value?.lotes || [];
+      return lotes.find((l) => l.status_venda === 'esgotado') || null;
     });
+
+    const precificacao = reactive({
+      subtotal: 0,
+      desconto: 0,
+      taxa: 0,
+      repassa: false,
+      total: 0,
+      carregando: false,
+    });
+    const erroCupom = ref('');
+    let timerPrecificacao = null;
+
+    function montarPayloadPrecificacao(comCupom) {
+      const payload = { lote_id: loteAtivo.value.id, quantidade: form.quantidade };
+      if (comCupom && form.cupom) payload.cupom = form.cupom;
+      if (/^\d+$/.test(String(slugOuId.value))) payload.evento_id = Number(slugOuId.value);
+      else payload.slug = String(slugOuId.value);
+      return payload;
+    }
+
+    function aplicarPrecificacao(resultado) {
+      precificacao.subtotal = resultado.subtotal;
+      precificacao.desconto = resultado.desconto;
+      precificacao.taxa = resultado.taxa;
+      precificacao.repassa = resultado.repassa_taxa_comprador;
+      precificacao.total = resultado.total;
+    }
+
+    async function atualizarPrecificacao() {
+      if (!loteAtivo.value) return;
+      precificacao.carregando = true;
+      erroCupom.value = '';
+      try {
+        aplicarPrecificacao(await previsualizarPedido(montarPayloadPrecificacao(true)));
+      } catch (e) {
+        const mensagem = e.response?.data?.erro || '';
+        if (form.cupom && /cupom/i.test(mensagem)) {
+          erroCupom.value = mensagem;
+          try {
+            aplicarPrecificacao(await previsualizarPedido(montarPayloadPrecificacao(false)));
+          } catch {
+            /* mantém o último total conhecido em caso de falha na nova tentativa */
+          }
+        }
+      } finally {
+        precificacao.carregando = false;
+      }
+    }
+
+    function agendarAtualizacaoPrecificacao() {
+      clearTimeout(timerPrecificacao);
+      timerPrecificacao = setTimeout(atualizarPrecificacao, 350);
+    }
 
     function atualizarTotal() {
       if (loteAtivo.value && form.quantidade > loteAtivo.value.restam) {
@@ -131,6 +205,7 @@ export default {
     }
 
     watch(() => form.quantidade, atualizarTotal);
+    watch(() => [form.quantidade, form.cupom], agendarAtualizacaoPrecificacao);
 
     onMounted(async () => {
       try {
@@ -144,8 +219,9 @@ export default {
           url: `${LOJA_URL}/${evento.value.slug || slugOuId.value}`,
         });
         schemaEvento(evento.value, loteAtivo.value);
+        await atualizarPrecificacao();
       } catch (e) {
-        erro.value = mensagemAmigavel(e.response?.data?.erro, e.response?.status) || 'Evento indisponível.';
+        erro.value = mensagemAmigavel(e) || 'Evento indisponível.';
       } finally {
         carregando.value = false;
       }
@@ -160,7 +236,7 @@ export default {
           quantidade: form.quantidade,
           nome: form.nome,
           email: form.email,
-          lgpd: true,
+          lgpd: form.lgpd,
         };
         if (form.cupom) payload.cupom = form.cupom;
         if (/^\d+$/.test(String(slugOuId.value))) payload.evento_id = Number(slugOuId.value);
@@ -170,7 +246,7 @@ export default {
         if (res.init_point) window.location.href = res.init_point;
         else router.push(`/pedido/${res.codigo}`);
       } catch (e) {
-        erro.value = mensagemAmigavel(e.response?.data?.erro, e.response?.status);
+        erro.value = mensagemAmigavel(e);
       } finally {
         enviando.value = false;
       }
@@ -183,7 +259,7 @@ export default {
         emailEspera.value = '';
         alert('E-mail registrado na lista de espera.');
       } catch (e) {
-        erro.value = mensagemAmigavel(e.response?.data?.erro) || 'Erro ao inscrever.';
+        erro.value = mensagemAmigavel(e) || 'Erro ao inscrever.';
       }
     }
 
@@ -194,9 +270,11 @@ export default {
       enviando,
       form,
       loteAtivo,
+      loteEsgotado,
       preview,
       emailEspera,
-      totalEstimado,
+      precificacao,
+      erroCupom,
       formatarData,
       formatarMoeda,
       comprar,
