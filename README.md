@@ -4,7 +4,7 @@
 
 Loja pública de ingressos para os shows do Beco. Checkout Mercado Pago, pedido, QR e recuperação por e-mail.
 
-**Loja** [https://ingressosbeco.raulnikroyce.dev](https://ingressosbeco.raulnikroyce.dev) · **Painel** [https://demo.raulnikroyce.dev](https://demo.raulnikroyce.dev)  
+**Loja** [https://ingressosbeco.raulnikroyce.dev](https://ingressosbeco.raulnikroyce.dev) · **Painel** [https://demo.raulnikroyce.dev](https://demo.raulnikroyce.dev)
 **API** [api-beco-underground](https://github.com/RaulnikRoyce/api-beco-underground) · **Painel (repo)** [frontend-beco-underground](https://github.com/RaulnikRoyce/frontend-beco-underground) · **Loja** este repositório
 
 Produção no [Vercel](https://vercel.com) com domínio `ingressosbeco.raulnikroyce.dev`. A API roda no Render. Meta, lotes e publicação ficam no painel admin.
@@ -53,3 +53,10 @@ Deploy conectado ao GitHub no Vercel. Build `npm run build`, output `dist`. Dom�
 Variável `VITE_API_URL=https://api-beco-underground.onrender.com` no painel do Vercel. O `vercel.json` garante rewrite SPA para o Vue Router.
 
 Detalhes de DNS, API e widget em [DEPLOY.md](./DEPLOY.md).
+
+
+## Testes do checkout
+
+`npm test` verifica o script real do componente com reatividade Vue: cotação fora de ordem, falha inicial, escape do template, compra válida, edição imediata e nova tentativa. Usa rede e timers controlados, sem acessar pagamentos reais. Execute também `npm run lint` e `npm run build`.
+
+A compra exige total confirmado para o payload atual. Pedidos com `cancelamento_pendente` mostram ingressos suspensos; a API deve ser implantada primeiro, com a migração de cancelamentos.

@@ -40,7 +40,7 @@
             <span class="font-mono">+ R$ {{ formatarMoeda(precificacao.taxa) }}</span>
           </div>
           <div class="flex items-center justify-between border-t border-zinc-800 pt-2">
-            <span class="font-semibold text-zinc-300">Total{{ precificacao.carregando ? ' (atualizando…)' : '' }}</span>
+            <span class="font-semibold text-zinc-300">Total{{ !cotacaoValida ? ' (aguardando confirmação)' : '' }}</span>
             <span class="text-xl font-bold font-mono">R$ {{ formatarMoeda(precificacao.total) }}</span>
           </div>
         </div>
@@ -63,8 +63,11 @@
           Li e aceito o uso dos meus dados para emissão do ingresso e contato sobre este evento.
         </label>
         <p v-if="erro" class="erro-box" role="alert">{{ erro }}</p>
-        <button type="submit" class="btn-primary" :disabled="enviando || !form.lgpd">
-          {{ enviando ? 'Redirecionando…' : `Pagar R$ ${formatarMoeda(precificacao.total)}` }}
+        <button type="submit" class="btn-primary" :disabled="enviando || !form.lgpd || !cotacaoValida || precificacao.carregando">
+          {{ enviando ? 'Redirecionando…' : cotacaoValida ? `Pagar R$ ${formatarMoeda(precificacao.total)}` : 'Aguardando total' }}
+        </button>
+        <button v-if="!cotacaoValida && !precificacao.carregando && (erro || erroCupom)" type="button" class="btn-ghost" @click="atualizarPrecificacao">
+          Conferir total novamente
         </button>
       </form>
     </div>
@@ -92,7 +95,7 @@
 </template>
 
 <script>
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { obterEvento, criarPedido, previsualizarPedido, inscreverListaEspera } from '../services/loja';
 import { formatarData, formatarMoeda, atualizarOg, schemaEvento } from '../lib/formatar';
@@ -154,7 +157,12 @@ export default {
       carregando: false,
     });
     const erroCupom = ref('');
+    const cotacaoValida = ref(false);
+    let geracaoPrecificacao = 0;
+    let assinaturaCotacao = null;
     let timerPrecificacao = null;
+    let geracaoEvento = 0;
+    let descartado = false;
 
     function montarPayloadPrecificacao(comCupom) {
       const payload = { lote_id: loteAtivo.value.id, quantidade: form.quantidade };
@@ -174,29 +182,41 @@ export default {
 
     async function atualizarPrecificacao() {
       if (!loteAtivo.value) return;
+      const geracao = ++geracaoPrecificacao;
+      const payload = montarPayloadPrecificacao(true);
+      cotacaoValida.value = false;
       precificacao.carregando = true;
       erroCupom.value = '';
+      erro.value = '';
       try {
-        aplicarPrecificacao(await previsualizarPedido(montarPayloadPrecificacao(true)));
+        const resultado = await previsualizarPedido(payload);
+        if (geracao !== geracaoPrecificacao) return;
+        aplicarPrecificacao(resultado);
+        assinaturaCotacao = JSON.stringify(payload);
+        cotacaoValida.value = true;
       } catch (e) {
-        const mensagem = e.response?.data?.erro || '';
-        if (form.cupom && /cupom/i.test(mensagem)) {
-          erroCupom.value = mensagem;
-          try {
-            aplicarPrecificacao(await previsualizarPedido(montarPayloadPrecificacao(false)));
-          } catch {
-            /* mantém o último total conhecido em caso de falha na nova tentativa */
-          }
-        }
+        if (geracao !== geracaoPrecificacao) return;
+        const mensagem = mensagemDeErro(e, 'Não foi possível confirmar o total. Tente novamente.');
+        if (payload.cupom && /cupom/i.test(mensagem)) erroCupom.value = mensagem;
+        else erro.value = mensagem;
       } finally {
-        precificacao.carregando = false;
+        if (geracao === geracaoPrecificacao) precificacao.carregando = false;
       }
     }
 
     function agendarAtualizacaoPrecificacao() {
+      geracaoPrecificacao += 1;
+      cotacaoValida.value = false;
       clearTimeout(timerPrecificacao);
       timerPrecificacao = setTimeout(atualizarPrecificacao, 350);
     }
+
+    onBeforeUnmount(() => {
+      descartado = true;
+      geracaoEvento += 1;
+      geracaoPrecificacao += 1;
+      clearTimeout(timerPrecificacao);
+    });
 
     function atualizarTotal() {
       if (loteAtivo.value && form.quantidade > loteAtivo.value.restam) {
@@ -207,27 +227,39 @@ export default {
     watch(() => form.quantidade, atualizarTotal);
     watch(() => [form.quantidade, form.cupom], agendarAtualizacaoPrecificacao);
 
-    onMounted(async () => {
+    async function carregarEvento() {
+      const geracao = ++geracaoEvento;
+      const rota = slugOuId.value;
+      cotacaoValida.value = false;
+      carregando.value = true;
       try {
-        evento.value = await obterEvento(slugOuId.value, previewToken.value);
-        if (evento.value.slug && /^\d+$/.test(String(slugOuId.value))) {
-          router.replace({ path: `/${evento.value.slug}`, query: route.query });
-        }
-        atualizarOg({
-          title: `${evento.value.nome} · Ingressos Beco`,
-          description: `${formatarData(evento.value.data)} · ${evento.value.local}`,
-          url: `${LOJA_URL}/${evento.value.slug || slugOuId.value}`,
-        });
-        schemaEvento(evento.value, loteAtivo.value);
+        const lido = await obterEvento(rota, previewToken.value);
+        if (descartado || geracao !== geracaoEvento) return;
+        evento.value = lido;
+        if (lido.slug && /^\d+$/.test(String(rota))) router.replace({ path: `/${lido.slug}`, query: route.query });
+        atualizarOg({ title: `${lido.nome} · Ingressos Beco`, description: `${formatarData(lido.data)} · ${lido.local}`, url: `${LOJA_URL}/${lido.slug || rota}` });
+        schemaEvento(lido, loteAtivo.value);
         await atualizarPrecificacao();
       } catch (e) {
-        erro.value = mensagemAmigavel(e) || 'Evento indisponível.';
+        if (!descartado && geracao === geracaoEvento) erro.value = mensagemAmigavel(e) || 'Evento indisponível.';
       } finally {
-        carregando.value = false;
+        if (!descartado && geracao === geracaoEvento) carregando.value = false;
       }
+    }
+
+    onMounted(carregarEvento);
+    watch([slugOuId, previewToken], () => {
+      geracaoPrecificacao += 1;
+      clearTimeout(timerPrecificacao);
+      evento.value = null;
+      carregarEvento();
     });
 
     async function comprar() {
+      if (enviando.value || !form.lgpd || !cotacaoValida.value || assinaturaCotacao !== JSON.stringify(montarPayloadPrecificacao(true))) {
+        erro.value = 'Aguarde a confirmação do total antes de continuar.';
+        return;
+      }
       enviando.value = true;
       erro.value = '';
       try {
@@ -275,11 +307,13 @@ export default {
       emailEspera,
       precificacao,
       erroCupom,
+      cotacaoValida,
       formatarData,
       formatarMoeda,
       comprar,
       listaEspera,
       atualizarTotal,
+      atualizarPrecificacao,
     };
   },
 };

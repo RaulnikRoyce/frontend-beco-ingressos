@@ -3,7 +3,10 @@
     <h1 class="text-2xl font-bold">{{ dados.evento.nome }}</h1>
     <p class="mt-2 text-sm text-zinc-400">Pedido {{ dados.pedido.codigo_publico }}</p>
 
-    <p v-if="dados.pedido.status === 'pago'" class="mt-6 text-emerald-400 font-semibold">
+    <p v-if="dados.pedido.cancelamento_pendente" class="mt-6 text-amber-300">
+      Cancelamento em processamento. Os ingressos estão suspensos enquanto o estorno é confirmado.
+    </p>
+    <p v-else-if="dados.pedido.status === 'pago'" class="mt-6 text-emerald-400 font-semibold">
       Pagamento confirmado
     </p>
     <p v-else-if="dados.pedido.status === 'pendente' && pagamentoRecusado" class="mt-6 text-red-400">
